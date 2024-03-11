@@ -40,6 +40,7 @@ import idautils
 import idc
 import datetime
 import os
+import sys
 import time
 from xml.etree import cElementTree
 
@@ -310,7 +311,7 @@ class XmlExporter(IdaXml):
         self.display_summary('Export')
         idc.msg('\nDatabase exported to: ' + self.filename + '\n')
 
-        print("GhIDA:: [DEBUG] found %d symbols" % len(SYMBLE_TABLE_DICT))
+        # print("GhIDA:: [DEBUG] found %d symbols" % len(SYMBLE_TABLE_DICT))
         return
 
     # TODO: Test decompiler comments in batch and gui modes
@@ -1179,9 +1180,9 @@ class XmlExporter(IdaXml):
             elif idc.is_code(f) == True:
                 insn = ida_ua.insn_t()
                 ida_ua.decode_insn(insn, addr)
-                target = insn.ops[op].value - ri.tdelta + ri.base
+                target = (insn.ops[op].value - ri.tdelta + ri.base) & ((1 << 64) - 1)
             elif idc.is_data(f) == True:
-                target = self.get_data_value(addr) - ri.tdelta + ri.base
+                target = (self.get_data_value(addr) - ri.tdelta + ri.base) & ((1 << 64) - 1)
             else:
                 return
         else:
@@ -1322,7 +1323,7 @@ class XmlExporter(IdaXml):
         # to Ghidra definitions. For x86 binaries, look at x86.ldefs
         # specifications.
         compiler_name = ida_typeinf.get_compiler_name(self.inf.cc.id)
-        print("GhIDA:: [DEBUG] compiler name: %s" % compiler_name)
+        # print("GhIDA:: [DEBUG] compiler name: %s" % compiler_name)
         new_compiler_name = ''
 
         if addr_model == '16-bit':
@@ -1374,7 +1375,7 @@ class XmlExporter(IdaXml):
                 print("GhIDA [!] unknown compiler not supported by Ghidra")
                 return False
 
-        print("GhIDA:: [DEBUG] new_compiler_name: %s" % new_compiler_name)
+        # print("GhIDA:: [DEBUG] new_compiler_name: %s" % new_compiler_name)
 
         # self.write_attribute(
         #     NAME, ida_typeinf.get_compiler_name(self.inf.cc.id))
@@ -1575,9 +1576,9 @@ class XmlExporter(IdaXml):
             regcmt = ida_struct.get_member_cmt(member.id, False)
             rptcmt = ida_struct.get_member_cmt(member.id, True)
             if regcmt != None:
-                regcmt = ida_lines.tag_remove(regcmt + " ", 0)
+                regcmt = ida_lines.tag_remove(regcmt + " ")
             if rptcmt != None:
-                rptrcmt = ida_lines.tag_remove(rptcmt + " ", 0)
+                rptrcmt = ida_lines.tag_remove(rptcmt + " ")
             has_regcmt = regcmt != None and len(regcmt) > 0
             has_rptcmt = rptcmt != None and len(rptcmt) > 0
             has_content = has_regcmt or has_rptcmt
@@ -1681,8 +1682,9 @@ class XmlExporter(IdaXml):
             cmt: String containing type info.
         """
         # older versions of IDAPython returned a '\n' at end of cmt
-        while cmt[-1] == '\n':
-            cmt = cmt[:-1]
+        if(len(cmt) > 0):
+            while cmt[-1] == '\n':
+                cmt = cmt[:-1]
         self.write_comment_element(TYPEINFO_CMT, cmt)
 
     def export_user_memory_reference(self, addr):
@@ -2064,8 +2066,8 @@ class XmlExporter(IdaXml):
         if ida_idp.ph_get_id() == ida_idp.PLFM_C166:
             return False
         s = ida_segment.getseg(addr)
-        if s.startEA in self.overlay:
-            return self.overlay[s.startEA]
+        if s.start_ea in self.overlay:
+            return self.overlay[s.start_ea]
         return False
 
     def is_signed_data(self, flags):
@@ -3390,7 +3392,7 @@ class XmlImporter(IdaXml):
             datatype = self.get_attribute(register_var, DATATYPE)
         if self.has_attribute(register_var, DATATYPE_NAMESPACE):
             namespace = self.get_attribute(register_var, DATATYPE_NAMESPACE)
-        idc.define_local_var(func.startEA, func.endEA, reg, name)
+        idc.define_local_var(func.start_ea, func.endEA, reg, name)
         self.update_counter(REGISTER_VAR)
 
     def import_stack_frame(self, stack_frame, func):
@@ -3467,7 +3469,7 @@ class XmlImporter(IdaXml):
             if self.has_attribute(structure, NAMESPACE) == False:
                 return
             namespace = self.get_attribute(structure, NAMESPACE)
-            name = namspace + '__' + name
+            name = namespace + '__' + name
             name.replace('/', '_')
             name.replace('.', '_')
             dtyp = idc.get_struc_id(name)
@@ -3536,7 +3538,7 @@ class XmlImporter(IdaXml):
             if self.has_attribute(union, NAMESPACE) == False:
                 return
             namespace = self.get_attribute(union, NAMESPACE)
-            name = namspace + '__' + name
+            name = namespace + '__' + name
             name.replace('/', '_')
             name.replace('.', '_')
             dtyp = idc.get_struc_id(name)
