@@ -27,6 +27,7 @@ import signal
 import sys
 import tempfile
 import time
+import traceback
 
 import queue as Queue
 import random
@@ -72,7 +73,7 @@ def create_random_filename():
     if not GLOBAL_FILENAME:
         letters = [random.choice(string.ascii_letters) for i in range(5)]
         random_string = ''.join(letters)
-        GLOBAL_FILENAME = "%s_%s" % (idautils.GetInputFileMD5(), random_string)
+        GLOBAL_FILENAME = "%s_%s" % (idautils.GetInputFileMD5().hex(), random_string)
     return GLOBAL_FILENAME
 
 
@@ -234,6 +235,8 @@ def ghidra_headless(address,
                "-noanalysis",
                "-deleteProject"]
 
+        print(str(cmd))
+
         # Options to 'safely' terminate the process
         if os.name == 'posix':
             kwargs = {
@@ -267,7 +270,7 @@ def ghidra_headless(address,
                 continue
 
             # User terminated action
-            if idaapi.wasBreak():
+            if ida_kernwin.user_cancelled():
                 # Termiante the process!
                 terminate_process(p.pid)
                 stop = True
@@ -283,6 +286,7 @@ def ghidra_headless(address,
 
         # Check if JSON response is available
         if os.path.isfile(output_path):
+            print("JSON output: " + str(output_path))
             with open(output_path) as f_in:
                 j = json.load(f_in)
                 if j['status'] == "completed":
@@ -300,6 +304,7 @@ def ghidra_headless(address,
     except Exception as e:
         print("GhIDA:: [!] %s" % e)
         print("GhIDA:: [!] Ghidra headless analysis failed")
+        traceback.print_exc()
         idaapi.warning("Ghidra headless analysis failed")
         decompiled_code = None
 

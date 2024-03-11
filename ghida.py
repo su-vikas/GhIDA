@@ -28,6 +28,7 @@ except Exception:
     # Missing library is managed at the plugin entry
     pass
 
+import traceback
 
 import ida_kernwin
 import idaapi
@@ -647,7 +648,8 @@ def register_handlers():
 
     # Load a custom icon
     icon_path = gl.plugin_resource("ghida.png")
-    icon_data = str(open(icon_path, "rb").read())
+    # icon_data = str(open(icon_path, "rb").read())
+    icon_data = open(icon_path, "rb").read()
     icon_ghida = idaapi.load_custom_icon(data=icon_data)
 
     idaapi.register_action(idaapi.action_desc_t(
@@ -750,60 +752,65 @@ def register_actions_and_handlers_decompile_view():
     Attach the following actions in the pop-up menu of the
     decompiled view.
     """
-    # Load a custom icon
-    icon_path = gl.plugin_resource("ghida.png")
-    icon_data = str(open(icon_path, "rb").read())
-    icon_ghida = idaapi.load_custom_icon(data=icon_data)
+    try:
+        # Load a custom icon
+        icon_path = gl.plugin_resource("ghida.png")
+        icon_data = open(icon_path, "rb").read()
+        icon_ghida = idaapi.load_custom_icon(data=icon_data)
 
-    decompiler_widget = idaapi.find_widget('Decompiled Function')
-    # TODO alternative
-    # decompiler_widget = idaapi.get_current_tform()
+        decompiler_widget = idaapi.find_widget('Decompiled Function')
+        # TODO alternative
+        # decompiler_widget = idaapi.get_current_tform()
 
-    # Add Rename to the pop-up
-    action_renamecustviewer = idaapi.action_desc_t(
-        'my:renamecustviewerhandler',
-        'Rename',
-        RenameCustViewerHandler(
-            DECOMP_VIEW),
-        None,
-        None,
-        icon_ghida)
-    decompiler_widget = idaapi.find_widget('Decompiled Function')
-    idaapi.register_action(action_renamecustviewer)
-    idaapi.attach_action_to_popup(decompiler_widget,
-                                  None,
-                                  "my:renamecustviewerhandler",
-                                  None)
+        # Add Rename to the pop-up
+        action_renamecustviewer = idaapi.action_desc_t(
+            'my:renamecustviewerhandler',
+            'Rename',
+            RenameCustViewerHandler(
+                DECOMP_VIEW),
+            None,
+            None,
+            icon_ghida)
+        decompiler_widget = idaapi.find_widget('Decompiled Function')
+        idaapi.register_action(action_renamecustviewer)
+        idaapi.attach_action_to_popup(decompiler_widget,
+                                      None,
+                                      "my:renamecustviewerhandler",
+                                      None)
 
-    # Add add-comment to the pop-up
-    action_addcommentcustviewer = idaapi.action_desc_t(
-        'my:addcommentcustviewer',
-        'Add comment',
-        AddCommentCustViewerHandler(
-            DECOMP_VIEW),
-        None,
-        None,
-        icon_ghida)
-    idaapi.register_action(action_addcommentcustviewer)
-    idaapi.attach_action_to_popup(decompiler_widget,
-                                  None,
-                                  "my:addcommentcustviewer",
-                                  None)
+        # Add add-comment to the pop-up
+        action_addcommentcustviewer = idaapi.action_desc_t(
+            'my:addcommentcustviewer',
+            'Add comment',
+            AddCommentCustViewerHandler(
+                DECOMP_VIEW),
+            None,
+            None,
+            icon_ghida)
+        idaapi.register_action(action_addcommentcustviewer)
+        idaapi.attach_action_to_popup(decompiler_widget,
+                                      None,
+                                      "my:addcommentcustviewer",
+                                      None)
 
-    # Add goto to the pop-up
-    action_gotocustviewerhandler = idaapi.action_desc_t(
-        'my:gotocustviewerhandler',
-        'Goto',
-        GoToCustViewerHandler(
-            DECOMP_VIEW),
-        None,
-        None,
-        icon_ghida)
-    idaapi.register_action(action_gotocustviewerhandler)
-    idaapi.attach_action_to_popup(decompiler_widget,
-                                  None,
-                                  "my:gotocustviewerhandler",
-                                  None)
+        # Add goto to the pop-up
+        action_gotocustviewerhandler = idaapi.action_desc_t(
+            'my:gotocustviewerhandler',
+            'Goto',
+            GoToCustViewerHandler(
+                DECOMP_VIEW),
+            None,
+            None,
+            icon_ghida)
+        idaapi.register_action(action_gotocustviewerhandler)
+        idaapi.attach_action_to_popup(decompiler_widget,
+                                      None,
+                                      "my:gotocustviewerhandler",
+                                      None)
+    except Exception as e:
+        print(e)
+        traceback.print_exc()
+
     return
 
 
@@ -880,6 +887,7 @@ def decompile_function_wrapper(cache_only=False, do_show=True):
     try:
         global DECOMP_VIEW
         ea = gl.get_current_address()
+        print("+++++++++ address: " + str(ea))
         if not ea:
             # This is not a function
             # GhIDA can decompile only IDA recognized functions.
@@ -974,6 +982,7 @@ def decompile_function_wrapper(cache_only=False, do_show=True):
         return
     except Exception:
         print("GhIDA:: [!] Decompilation wrapper error")
+        traceback.print_exc()
         idaapi.warning("GhIDA decompilation wrapper error")
 
 

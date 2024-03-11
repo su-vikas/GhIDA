@@ -262,8 +262,10 @@ def get_current_address():
         return None
 
     # Get function start address
-    ea = func.startEA
-    ea = hex(ea).strip("0x").strip("L")
+    ea = func.start_ea
+    print("[+++] func address: " + str(hex(ea)))
+    ea = hex(ea).replace("0x", "")
+    print("[+++] func address stripped: " + str(ea))
     return ea
 
 
