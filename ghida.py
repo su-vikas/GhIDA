@@ -888,7 +888,6 @@ def decompile_function_wrapper(cache_only=False, do_show=True):
     try:
         global DECOMP_VIEW
         ea = gl.get_current_address()
-        print("+++++++++ address: " + str(ea))
         if not ea:
             # This is not a function
             # GhIDA can decompile only IDA recognized functions.
